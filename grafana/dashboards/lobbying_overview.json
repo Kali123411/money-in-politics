@@ -1,0 +1,396 @@
+{
+  "annotations": { "list": [] },
+  "description": "Federal lobbying activity sourced from Senate Lobbying Disclosure Act filings. Updated nightly.",
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 1,
+  "id": null,
+  "liveNow": false,
+  "panels": [
+    {
+      "id": 100,
+      "type": "text",
+      "title": "",
+      "gridPos": { "h": 3, "w": 24, "x": 0, "y": 0 },
+      "transparent": true,
+      "options": {
+        "mode": "markdown",
+        "content": "## Money in Politics — Federal Lobbying\n\nLobbying spend disclosed under the **Lobbying Disclosure Act (LDA)**, filed quarterly with the Secretary of the Senate. Data is trailing by ~45 days due to reporting deadlines. Use the **Year** selector above to scope the entire dashboard. Values shown are in USD unless labeled otherwise. _This dashboard does not include state-level lobbying, dark-money 501(c)(4) activity, foreign agent (FARA) filings, or campaign contributions — all of which are separate reporting regimes._"
+      }
+    },
+
+    {
+      "id": 1,
+      "title": "Total spend",
+      "type": "stat",
+      "gridPos": { "h": 5, "w": 6, "x": 0, "y": 3 },
+      "datasource": { "type": "postgres", "uid": "lobbying" },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "currencyUSD",
+          "decimals": 2,
+          "color": { "mode": "fixed", "fixedColor": "super-light-green" }
+        }
+      },
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "colorMode": "background_solid",
+        "graphMode": "none",
+        "textMode": "auto"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "format": "table",
+          "rawSql": "SELECT total_spend FROM mv_yearly_totals WHERE filing_year = $year;"
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "title": "Filings",
+      "type": "stat",
+      "gridPos": { "h": 5, "w": 4, "x": 6, "y": 3 },
+      "datasource": { "type": "postgres", "uid": "lobbying" },
+      "fieldConfig": {
+        "defaults": { "unit": "short", "decimals": 0, "color": { "mode": "fixed", "fixedColor": "purple" } }
+      },
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"] },
+        "colorMode": "value",
+        "graphMode": "none"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "format": "table",
+          "rawSql": "SELECT filings FROM mv_yearly_totals WHERE filing_year = $year;"
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "title": "Unique clients",
+      "type": "stat",
+      "gridPos": { "h": 5, "w": 4, "x": 10, "y": 3 },
+      "datasource": { "type": "postgres", "uid": "lobbying" },
+      "fieldConfig": {
+        "defaults": { "unit": "short", "decimals": 0, "color": { "mode": "fixed", "fixedColor": "orange" } }
+      },
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"] },
+        "colorMode": "value",
+        "graphMode": "none"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "format": "table",
+          "rawSql": "SELECT unique_clients FROM mv_yearly_totals WHERE filing_year = $year;"
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "title": "Active firms",
+      "type": "stat",
+      "gridPos": { "h": 5, "w": 4, "x": 14, "y": 3 },
+      "datasource": { "type": "postgres", "uid": "lobbying" },
+      "fieldConfig": {
+        "defaults": { "unit": "short", "decimals": 0, "color": { "mode": "fixed", "fixedColor": "blue" } }
+      },
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"] },
+        "colorMode": "value",
+        "graphMode": "none"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "format": "table",
+          "rawSql": "SELECT unique_registrants FROM mv_yearly_totals WHERE filing_year = $year;"
+        }
+      ]
+    },
+    {
+      "id": 5,
+      "title": "YoY change (spend)",
+      "type": "stat",
+      "gridPos": { "h": 5, "w": 6, "x": 18, "y": 3 },
+      "datasource": { "type": "postgres", "uid": "lobbying" },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "decimals": 1,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "red", "value": null },
+              { "color": "yellow", "value": 0 },
+              { "color": "green", "value": 3 }
+            ]
+          }
+        }
+      },
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"] },
+        "colorMode": "background",
+        "graphMode": "none",
+        "textMode": "auto"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "format": "table",
+          "rawSql": "SELECT ROUND(((t.total_spend - p.total_spend) / NULLIF(p.total_spend, 0) * 100)::numeric, 1) AS pct FROM mv_yearly_totals t LEFT JOIN mv_yearly_totals p ON p.filing_year = t.filing_year - 1 WHERE t.filing_year = $year;"
+        }
+      ]
+    },
+
+    {
+      "id": 10,
+      "title": "Quarterly spend by sector — all years",
+      "type": "timeseries",
+      "gridPos": { "h": 11, "w": 16, "x": 0, "y": 8 },
+      "datasource": { "type": "postgres", "uid": "lobbying" },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "currencyUSD",
+          "custom": {
+            "drawStyle": "bars",
+            "lineWidth": 1,
+            "fillOpacity": 90,
+            "stacking": { "mode": "normal", "group": "A" }
+          }
+        }
+      },
+      "options": {
+        "legend": { "displayMode": "table", "placement": "right", "calcs": ["sum"] },
+        "tooltip": { "mode": "multi", "sort": "desc" }
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "format": "time_series",
+          "rawSql": "SELECT quarter_start AS time, sector AS metric, SUM(spend) AS value FROM mv_quarterly_sector GROUP BY quarter_start, sector ORDER BY quarter_start;"
+        }
+      ]
+    },
+    {
+      "id": 11,
+      "title": "Top 20 clients by spend",
+      "type": "barchart",
+      "gridPos": { "h": 11, "w": 8, "x": 16, "y": 8 },
+      "datasource": { "type": "postgres", "uid": "lobbying" },
+      "fieldConfig": {
+        "defaults": { "unit": "currencyUSD", "color": { "mode": "continuous-GrYlRd" } }
+      },
+      "options": { "orientation": "horizontal", "showValue": "always", "xTickLabelRotation": 0 },
+      "targets": [
+        {
+          "refId": "A",
+          "format": "table",
+          "rawSql": "SELECT client_name, total_spend FROM mv_client_year WHERE filing_year = $year ORDER BY total_spend DESC LIMIT 20;"
+        }
+      ]
+    },
+
+    {
+      "id": 20,
+      "title": "Client lookup — edit \"Client search\" above to filter",
+      "type": "table",
+      "gridPos": { "h": 9, "w": 12, "x": 0, "y": 19 },
+      "description": "Type a partial client name in the Client search variable at the top of the dashboard. Case-insensitive, matches anywhere in the name.",
+      "datasource": { "type": "postgres", "uid": "lobbying" },
+      "options": {
+        "showHeader": true,
+        "cellHeight": "sm",
+        "footer": { "show": true, "reducer": ["sum"], "fields": ["total_spend"] }
+      },
+      "fieldConfig": {
+        "defaults": { "custom": { "align": "left" } },
+        "overrides": [
+          { "matcher": { "id": "byName", "options": "total_spend" },
+            "properties": [
+              { "id": "unit", "value": "currencyUSD" },
+              { "id": "custom.cellOptions", "value": { "type": "gauge", "mode": "basic" } },
+              { "id": "color", "value": { "mode": "continuous-GrYlRd" } },
+              { "id": "displayName", "value": "Spend" }
+            ]
+          }
+        ]
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "format": "table",
+          "rawSql": "SELECT filing_year AS \"Year\", client_name AS \"Client\", sector AS \"Sector\", total_spend, filings AS \"Filings\" FROM mv_client_year WHERE client_name ILIKE '%' || '$client_search' || '%' ORDER BY filing_year DESC, total_spend DESC LIMIT 100;"
+        }
+      ]
+    },
+    {
+      "id": 21,
+      "title": "Industry share of spend",
+      "type": "piechart",
+      "gridPos": { "h": 9, "w": 12, "x": 12, "y": 19 },
+      "datasource": { "type": "postgres", "uid": "lobbying" },
+      "fieldConfig": { "defaults": { "unit": "currencyUSD" } },
+      "options": {
+        "pieType": "donut",
+        "displayLabels": ["name", "percent"],
+        "legend": { "displayMode": "table", "placement": "right", "values": ["value", "percent"] }
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "format": "table",
+          "rawSql": "SELECT sector, SUM(spend) AS value FROM mv_quarterly_sector WHERE filing_year = $year GROUP BY sector ORDER BY value DESC;"
+        }
+      ]
+    },
+
+    {
+      "id": 30,
+      "title": "Most-lobbied bills",
+      "type": "table",
+      "gridPos": { "h": 11, "w": 12, "x": 0, "y": 28 },
+      "datasource": { "type": "postgres", "uid": "lobbying" },
+      "options": { "showHeader": true, "cellHeight": "sm" },
+      "fieldConfig": {
+        "defaults": { "custom": { "align": "left" } },
+        "overrides": [
+          { "matcher": { "id": "byName", "options": "Clients" },
+            "properties": [
+              { "id": "custom.cellOptions", "value": { "type": "gauge", "mode": "basic" } },
+              { "id": "color", "value": { "mode": "continuous-BlPu" } }
+            ]
+          }
+        ]
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "format": "table",
+          "rawSql": "SELECT ab.bill_number AS \"Bill\", COUNT(DISTINCT f.client_id) AS \"Clients\", COUNT(DISTINCT f.registrant_id) AS \"Firms\", COUNT(*) AS \"Mentions\" FROM activity_bills ab JOIN lobbying_activities a ON a.id = ab.activity_id JOIN filings f ON f.id = a.filing_id WHERE f.filing_year = $year GROUP BY ab.bill_number ORDER BY COUNT(DISTINCT f.client_id) DESC LIMIT 30;"
+        }
+      ]
+    },
+    {
+      "id": 31,
+      "title": "Revolving door — lobbyists with disclosed prior government roles",
+      "type": "table",
+      "gridPos": { "h": 11, "w": 12, "x": 12, "y": 28 },
+      "datasource": { "type": "postgres", "uid": "lobbying" },
+      "options": { "showHeader": true, "cellHeight": "sm" },
+      "targets": [
+        {
+          "refId": "A",
+          "format": "table",
+          "rawSql": "SELECT DISTINCT ON (l.id) l.full_name AS \"Lobbyist\", r.name AS \"Firm\", al.covered_position AS \"Prior government role\" FROM lobbyists l JOIN activity_lobbyists al ON al.lobbyist_id = l.id JOIN lobbying_activities a ON a.id = al.activity_id JOIN filings f ON f.id = a.filing_id JOIN registrants r ON r.id = f.registrant_id WHERE al.covered_position IS NOT NULL AND al.covered_position <> '' AND f.filing_year = $year ORDER BY l.id LIMIT 50;"
+        }
+      ]
+    },
+
+    {
+      "id": 40,
+      "title": "Top lobbying firms by client count",
+      "type": "barchart",
+      "gridPos": { "h": 11, "w": 12, "x": 0, "y": 39 },
+      "datasource": { "type": "postgres", "uid": "lobbying" },
+      "fieldConfig": {
+        "defaults": { "unit": "short", "color": { "mode": "continuous-BlPu" } }
+      },
+      "options": { "orientation": "horizontal", "showValue": "always" },
+      "targets": [
+        {
+          "refId": "A",
+          "format": "table",
+          "rawSql": "SELECT registrant_name, client_count FROM mv_firm_year WHERE filing_year = $year ORDER BY client_count DESC LIMIT 20;"
+        }
+      ]
+    },
+    {
+      "id": 41,
+      "title": "Top lobbying firms by fees earned",
+      "type": "barchart",
+      "gridPos": { "h": 11, "w": 12, "x": 12, "y": 39 },
+      "datasource": { "type": "postgres", "uid": "lobbying" },
+      "fieldConfig": {
+        "defaults": { "unit": "currencyUSD", "color": { "mode": "continuous-GrYlRd" } }
+      },
+      "options": { "orientation": "horizontal", "showValue": "always" },
+      "targets": [
+        {
+          "refId": "A",
+          "format": "table",
+          "rawSql": "SELECT registrant_name, total_fees FROM mv_firm_year WHERE filing_year = $year ORDER BY total_fees DESC LIMIT 20;"
+        }
+      ]
+    },
+
+    {
+      "id": 50,
+      "title": "Data coverage by year",
+      "type": "table",
+      "gridPos": { "h": 7, "w": 24, "x": 0, "y": 50 },
+      "datasource": { "type": "postgres", "uid": "lobbying" },
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": [
+          { "matcher": { "id": "byName", "options": "Total spend" },
+            "properties": [{ "id": "unit", "value": "currencyUSD" }] },
+          { "matcher": { "id": "byName", "options": "YoY %" },
+            "properties": [
+              { "id": "unit", "value": "percent" },
+              { "id": "custom.cellOptions", "value": { "type": "color-background" } },
+              { "id": "thresholds", "value": { "mode": "absolute", "steps": [
+                { "color": "red", "value": null }, { "color": "yellow", "value": 0 }, { "color": "green", "value": 3 }
+              ]}}
+            ]
+          }
+        ]
+      },
+      "options": { "showHeader": true, "cellHeight": "sm" },
+      "targets": [
+        {
+          "refId": "A",
+          "format": "table",
+          "rawSql": "SELECT t.filing_year AS \"Year\", t.filings AS \"Filings\", t.unique_clients AS \"Clients\", t.unique_registrants AS \"Firms\", t.total_spend AS \"Total spend\", ROUND(((t.total_spend - p.total_spend) / NULLIF(p.total_spend, 0) * 100)::numeric, 1) AS \"YoY %\" FROM mv_yearly_totals t LEFT JOIN mv_yearly_totals p ON p.filing_year = t.filing_year - 1 ORDER BY t.filing_year DESC;"
+        }
+      ]
+    }
+  ],
+  "refresh": "",
+  "schemaVersion": 39,
+  "tags": ["lobbying", "politics", "money"],
+  "templating": {
+    "list": [
+      {
+        "name": "year",
+        "label": "Year",
+        "type": "query",
+        "datasource": { "type": "postgres", "uid": "lobbying" },
+        "query": "SELECT filing_year AS __text, filing_year AS __value FROM mv_yearly_totals ORDER BY filing_year DESC;",
+        "refresh": 1,
+        "sort": 3,
+        "multi": false,
+        "includeAll": false,
+        "current": {}
+      },
+      {
+        "name": "client_search",
+        "label": "Client search",
+        "type": "textbox",
+        "query": "",
+        "current": { "text": "chamber", "value": "chamber" }
+      }
+    ]
+  },
+  "time": { "from": "now-6y", "to": "now" },
+  "timepicker": {},
+  "timezone": "browser",
+  "title": "Money in Politics — Federal Lobbying",
+  "uid": "mip-overview",
+  "version": 3,
+  "weekStart": ""
+}

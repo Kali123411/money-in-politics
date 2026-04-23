@@ -1,0 +1,52 @@
+# Example GitHub Actions workflow for users who want to run the ingester
+# on a schedule against a hosted Postgres (Neon, Supabase, etc).
+#
+# To enable:
+# 1. Set DATABASE_URL and LDA_API_KEY as GitHub repo secrets
+#    Settings -> Secrets and variables -> Actions -> New repository secret
+# 2. Rename this file to ingest.yml (drop .example)
+# 3. Commit and push
+#
+# This is OPT-IN. Leaving it as .example keeps it disabled.
+
+name: Nightly LDA ingest
+
+on:
+  schedule:
+    - cron: '0 8 * * *'   # 08:00 UTC daily
+  workflow_dispatch:
+
+jobs:
+  ingest:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+
+      - name: Install dependencies
+        run: pip install -r ingest/requirements.txt
+
+      - name: Pull filings posted in the last 4 days
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          LDA_API_KEY:  ${{ secrets.LDA_API_KEY }}
+        run: |
+          SINCE=$(date -u -d '4 days ago' +%Y-%m-%d)
+          python ingest/ingest_lda.py --since $SINCE --skip-refresh
+
+      - name: Refresh materialized views
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: |
+          python -c "
+          import os, psycopg2
+          c = psycopg2.connect(os.environ['DATABASE_URL'])
+          c.cursor().execute('SELECT refresh_dashboard_views();')
+          c.commit(); c.close()
+          print('views refreshed')
+          "

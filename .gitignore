@@ -1,0 +1,34 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+env/
+*.egg-info/
+
+# Secrets — never commit these
+.env
+.env.local
+*.pem
+*.key
+
+# Local data dumps
+*.sql.gz
+*.dump
+lobbying_dump.sql
+pgdata/
+grafanadata/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+.DS_Store
+
+# OS
+Thumbs.db
+
+# Logs
+*.log
+logs/
